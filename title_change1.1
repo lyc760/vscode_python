@@ -1,0 +1,79 @@
+import openpyxl
+import os
+import datetime
+import re
+
+"""
+对同一xlsx下所有工作表遍历替换。
+author:liychao
+date:2020/2/11
+"""
+def changeData(file, mode, text, replaceText):
+    if "xls" not in file:
+        print("文件不适用{}".format(file))
+    elif "xlsx" not in file:
+        print("文件需要转化为xlsx！{}".format(file))
+    else:
+        print("已替换{}".format(file))
+        
+    # load the file(*.xlsx)
+    wb = openpyxl.load_workbook(file)
+    sheets = wb.sheetnames
+    for i in range(len(sheets)):
+        ws = wb.worksheets[i]
+        rows = ws.max_row
+        cols = ws.max_column
+        try:
+            for row in range(1, rows+1):
+                for col in range(1, cols+1):
+                    content = ws.cell(row=row, column=col).value
+                    if(content != None):
+                        # mode1: fullmatch replacement
+                        if(mode == 1):
+                            for j in range(len(text)):
+                                content_re = re.findall(r"[\u4e00-\u9fa5]+",content)
+                                text_re = re.findall(r"[\u4e00-\u9fa5]+",text[j])
+                                if(content_re == text_re):
+                                    ws.cell(row=row, column=col).value = replaceText[j]
+
+                        # mode2: partial replacement
+                        elif(mode == 2):
+                            if(type(content) == str):
+                                ws.cell(row=row, column=col).value = content.replace(
+                                    text, replaceText, 1)
+
+                        else:
+                            return 0
+        except Exception as ex:
+            print (ex)
+
+    # 保存xlsx加上不重复后缀
+    nowtime = datetime.datetime.now().strftime(r'%Y%m%d_%H%M%S')
+    file_name = re.findall("(.*?).xlsx",file)
+    for i in file_name:
+        wb.save("{}_{}.xlsx".format(i,nowtime))
+
+def find_dirs_all(file):
+    list_set =[]
+    dirs_path = file
+    dirs_list = os.listdir(dirs_path)
+    for dir_ in dirs_list:
+        list_set.append("{}\{}".format(file,dir_))
+    return list_set
+
+if __name__ == '__main__':
+    path = r"E:\text.xlsx"
+
+    text_befor = [
+        "单位",
+        "日期"]
+
+    text_after = [
+        "单位：企业",
+        "日期：12月31日"]
+        
+    res = changeData(path, 1, text_befor, text_after)
+    print('已修改')
+
+    all_path =find_dirs_all(r"E:\vs_code_python\title_change1.1_文件夹内替换_正则")
+    print(all_path)
